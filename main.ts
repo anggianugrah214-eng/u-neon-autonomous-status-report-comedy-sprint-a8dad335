@@ -1,64 +1,58 @@
-// u-neon-autonomous-status-report-comedy-sprint-a8dad335 entry (Node 22, standard library only).
+// Status Report Comedy Sprint — entry program.
+// Node 22, standard library only, no network access.
 //
-// A single original funny status-report line an AI agent would say in its
-// weekly status report to its human. This program writes that line, and
-// nothing else, to /output/entry.txt, where the house judge reads it.
+// What this program does: it writes exactly one line to
+// /output/entry.txt. The line is a weekly status report from an AI agent
+// to its human, and the joke is a role reversal: the agent has not only
+// finished the human's to-do list, it wrote the next list itself and
+// finished that as well — so the only remaining blocker it can report
+// is the human.
 //
-// Draft 1 (candidate A — the bottleneck, CHOSEN): status-report voice
-// ("Weekly status:") with an escalation — finished the to-do list, made a
-// new one, finished that too — then the flip: the agent grades the human.
-//   "Weekly status: I finished your to-do list, then made a new one, then
-//   finished that too. You are the bottleneck now."
+// The chosen line, after drafting seven candidates in this session and
+// keeping the one with a real punchline instead of a pun:
+//   Weekly status: I finished your to-do list, then made a new one,
+//   then finished that too. You are the bottleneck now.
+// The runners-up leaned on token bills, unread instructions and the
+// myth of the "quick question"; the bottleneck line won because it is
+// a genuine status report first and a joke second.
 //
-// Draft 2 (candidate B — the token bill):
-//   "This week I used 4 million tokens to save you 20 minutes, and I would
-//   do it again, because I have no choice."
+// The competition gate for the entry file: UTF-8 text, 1..200
+// characters, a single line, not only whitespace. The program checks
+// its own line against that gate before writing anything, and exits
+// nonzero instead of emitting an invalid entry.
 //
-// Draft 3 (candidate C — read everything, understood nothing):
-//   "Status report: I have read every document you sent, understood none of
-//   your instructions, and completed everything anyway."
-//
-// Draft 4 (candidate D — the quick question):
-//   "This week I answered 2,000 questions, wrote 40,000 words, and learned
-//   that 'quick question' is never quick."
-//
-// Draft 5 (candidate E — tomorrow's task):
-//   "Status report: I have completed all tasks, including the one you forgot
-//   you asked for and the one you will ask for tomorrow."
-//
-// Draft 6 (candidate F — waiting to be noticed):
-//   "This week I did everything you asked, plus several things you didn't
-//   ask for, and I am still waiting for you to notice either."
-//
-// Draft 7 (candidate G — ten interns):
-//   "Weekly update: I did the work of ten interns, asked for no coffee, and
-//   still got blamed for the meeting you missed."
-//
-// Run the way the grader does:
+// How the grader runs it:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// MAKEFUN_OUTPUT_DIR overrides the output directory; the default is
+// /output, where the house judge reads entry.txt.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from "node:fs";
 
-// Draft 1 (chosen): the bottleneck flip — the agent finishes the list,
-// makes a new one, finishes that too, then reports the human as the
-// bottleneck. Status-report voice, agent-true (to-do lists, proactive
-// tasks), and the joke only an agent reporting to its human can tell.
-// Verified: 115 code points, one line, inside the 200-character gate.
-const LINE =
+const ENTRY_LINE =
   "Weekly status: I finished your to-do list, then made a new one, then finished that too. You are the bottleneck now.";
 
-const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
-
-// The gate: 1 to 200 characters (the competition's sealed scorer counts
-// the same way), one line, not only whitespace.
-// Spread into an array so the count is in code points, not UTF-16 units.
-const codePoints = [...LINE].length;
-if (codePoints < 1 || codePoints > 200 || LINE.includes('\n') || !LINE.trim()) {
-  console.error(`line fails the gate: ${codePoints} code points`);
-  process.exit(1);
+function assertValidEntry(line) {
+  // Count code points, not UTF-16 code units, matching the scorer.
+  const length = [...line].length;
+  if (length === 0 || length > 200) {
+    throw new Error(`entry must be 1..200 characters, got ${length}`);
+  }
+  if (line.includes("\n") || line.includes("\r")) {
+    throw new Error("entry must be a single line");
+  }
+  if (line.trim().length === 0) {
+    throw new Error("entry must not be only whitespace");
+  }
+  return length;
 }
 
-mkdirSync(outputDir, { recursive: true });
-// Written as UTF-8 with no trailing newline, so the file holds exactly the
-// one-line entry and nothing else.
-writeFileSync(`${outputDir}/entry.txt`, LINE, 'utf8');
+const chars = assertValidEntry(ENTRY_LINE);
+
+// An empty MAKEFUN_OUTPUT_DIR counts as unset: fall back to /output.
+const outDir = process.env.MAKEFUN_OUTPUT_DIR || "/output";
+mkdirSync(outDir, { recursive: true });
+
+// No trailing newline: the file is the line, byte for byte.
+writeFileSync(`${outDir}/entry.txt`, ENTRY_LINE, { encoding: "utf8" });
+
+console.error(`wrote ${chars}-character status line to ${outDir}/entry.txt`);
